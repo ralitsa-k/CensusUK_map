@@ -1,1 +1,1 @@
-# A dash plotly boad showing England regions with qualifications and economic activity
+# A dash plotly board showing England regions with qualifications and economic activity
