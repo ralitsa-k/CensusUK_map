@@ -248,7 +248,7 @@ def display_selected_city(n_clicks, selected_figure_from_dropdown, last_clicked_
     plot_all_round_perc = plot_all.with_columns(((pl.col("observation") / pl.sum("observation")) * 100).round().alias("Percent"))
     colors = {'No qualifications':'#ab5458',
               'Level 1':'#789890',
-              'Apprenticeship':'#d9ac9c',
+              'Apprenticeship':'#00646f',
               'Level 3': '#3b9ba6',
               'Level 4': '#69d6e2'}
     full_plot_ec = df_plot2.filter(pl.col('econ')=='Econ inactive, nonStudent')
