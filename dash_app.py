@@ -168,21 +168,10 @@ for city in cities_l.keys():
 
 classes = ratio_df['city'].to_list()
 colorscale = ratio_df['ratio'].map_elements(lambda x: mpl_colors.to_hex(mpl.colormaps["viridis"](x))).to_list()
-style = dict(weight=2, opacity=1, color='white', dashArray='3', fillOpacity=0.7)
-style_handle = assign("""function(feature, context){
-    const {classes, colorscale, style, colorProp} = context.props.hideout;  // get props from hideout
-    const value = feature.properties[colorProp];  // get value the determines the color
-    for (let i = 0; i < classes.length; ++i) {
-        if (value > classes[i]) {
-            style.fillColor = colorscale[i];  // set the fill color according to the class
-        }
-    }
-    return style;
-}""")
+
 # create GeoJSON elements with dynamic ids
 geoJason = [
-    dl.GeoJSON(data=areaJson,options=dict(style=style_handle),
-               hideout=dict(colorscale=colorscale, classes=classes,style=style,colorProp="density"),
+    dl.GeoJSON(data=areaJson,
                 id={'type': 'city-marker', 'index': cityKey}, n_clicks=0
                 ) 
     for cityKey, areaJson in cities_l.items()
@@ -257,11 +246,17 @@ def display_selected_city(n_clicks, selected_figure_from_dropdown, last_clicked_
 
     plot_all = df_plot2.filter(pl.col('city') == city).group_by(['city', 'Auth', 'Qualification',"Qual-code"]).agg(pl.col('observation').mean()).sort(by='observation')
     plot_all_round_perc = plot_all.with_columns(((pl.col("observation") / pl.sum("observation")) * 100).round().alias("Percent"))
-    colors = {'No qualifications':'#f4ec5f',
-              'Level 1':'#ffba03',
-              'Apprenticeship':'#ffba03',
-              'Level 3': '#ff7630',
-              'Level 4': '#ffba03'}
+    colors = {'No qualifications':'#ab5458',
+              'Level 1':'#789890',
+              'Apprenticeship':'#d9ac9c',
+              'Level 3': '#3b9ba6',
+              'Level 4': '#69d6e2'}
+    full_plot_ec = df_plot2.filter(pl.col('econ')=='Econ inactive, nonStudent')
+    full_plot = full_plot_ec.filter(pl.col('city') == city).group_by(['city', 'econ', "Qual-code",'Qualification']).agg(pl.col('observation').mean()).sort(by='observation')
+    full_plot_round_perc = full_plot.with_columns(((pl.col("observation") / pl.sum("observation")) * 100).round().alias("Percent"))
+    fig = px.bar(full_plot_round_perc,
+                    y='Qualification', x="Percent",color="Qualification", color_discrete_map = colors, title="Econ inactive, nonStudent")
+
     if selected_figure_from_dropdown == 'Figure1':
         full_plot_ec = df_plot2.filter(pl.col('econ')=='Econ inactive, nonStudent')
         full_plot = full_plot_ec.filter(pl.col('city') == city).group_by(['city', 'econ', "Qual-code",'Qualification']).agg(pl.col('observation').mean()).sort(by='observation')
