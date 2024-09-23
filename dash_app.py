@@ -42,7 +42,7 @@ to_q = {'Other: vocational or work-related qualifications, other qualifications 
         'Does not apply':'NA'}
 df_plot2 = df_plot2.with_columns(pl.col('Qualification').replace(to_q))
 
-df_plot2 = df_plot2.filter(pl.col('Qualifications').str.contains(['inactive']))
+df_plot2 = df_plot2.filter(pl.col('econ').str.contains('inactive'))
 
 # start the dash app
 app = dash.Dash()
@@ -72,7 +72,7 @@ with open("city_wards.json", "w") as outfile:
     
 city_ward = json.load(open('city_wards.json'))
 df2 = df_plot2.with_columns(
-    pl.col('city').replace_strict(city_ward, default=None).alias('WD24CD')
+    pl.col('city').replace(city_ward, default=None).alias('WD24CD')
 ).filter(~pl.col('WD24CD').is_null())
 df_final = df2.join(df_base, how='inner', on='WD24CD')
 df = df_final.select(['WD24CD', 'LONG', 'LAT', 'WD24NM']).unique()
