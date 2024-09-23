@@ -101,12 +101,7 @@ wards = []
 for city in df_plot2['city'].unique():
     mapped = glob(f'./wards_by_lad/{city}.json')
     if mapped:
-        ratio_n = ratio_df.filter(pl.col('city')==city)['ratio'].item()
-        hex_c = mpl_colors.to_hex(mpl.colormaps["viridis"](ratio_n * 255))
         cities_l[city] = json.load(open(mapped[0]))
-        cities_l[city]['features'][0]['properties']['fill'] = hex_c
-        cities_l[city]['features'][0]['properties']['stroke'] = hex_c
-        cities_l[city]['features'][0]['properties']['color'] = hex_c
         cities.append(city)
         wards.append(json.load(open(mapped[0]))['features'][0]['properties']['WD13CD'])
     else:
@@ -166,13 +161,23 @@ for city_key, city_geo in cities_l.items():
 for city in cities_l.keys():
     cities_l[city]['features'] = super_polys[city]['features']
 
+    # Color
+    ratio_n = ratio_df.filter(pl.col('city')==city)['ratio'].item()
+    hex_c = mpl_colors.to_hex(mpl.colormaps["viridis"](ratio_n * 255))
+    cities_l[city]['features'][0]['properties']['color'] = hex_c
+
 classes = ratio_df['city'].to_list()
 colorscale = ratio_df['ratio'].map_elements(lambda x: mpl_colors.to_hex(mpl.colormaps["viridis"](x))).to_list()
 
 # create GeoJSON elements with dynamic ids
 geoJason = [
     dl.GeoJSON(data=areaJson,
-                id={'type': 'city-marker', 'index': cityKey}, n_clicks=0
+                id={'type': 'city-marker', 'index': cityKey}, n_clicks=0,
+                style=assign("""
+                    feature => ({
+                        color: feature.properties.color
+                    })
+                """)
                 ) 
     for cityKey, areaJson in cities_l.items()
 ]
