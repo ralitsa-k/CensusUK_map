@@ -87,8 +87,6 @@ df_plot2 = (
 )
 
 
-df_plot2 = df_plot2.with_columns(pl.lit('#FF00FF').alias('Econ_color'))
-
 #%% start the dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
 colors = {'background': '#111111', 'text': '#7FDBFF'}
@@ -155,15 +153,21 @@ for city_key, city_geo in cities_l.items():
         ]
     }
 
+import numpy as np
 
+def NormalizeData(data):
+    data = 1 - data
+    return (data - np.min(data)) / ((np.max(data) - np.min(data))) * 0.8
+
+ratio_df = ratio_df.with_columns(pl.lit(NormalizeData(ratio_df['ratio'].to_numpy())).alias('norm_ratio'))
 
 # reduce the polygon sizes so that it's less granular on the map
 for city in cities_l.keys():
     cities_l[city]['features'] = super_polys[city]['features']
 
     # Color
-    ratio_n = ratio_df.filter(pl.col('city')==city)['ratio'].item()
-    hex_c = mpl_colors.to_hex(mpl.colormaps["viridis"](ratio_n * 255))
+    ratio_n = ratio_df.filter(pl.col('city')==city)['norm_ratio'].item()
+    hex_c = mpl_colors.to_hex(mpl.colormaps["viridis"](ratio_n))
     cities_l[city]['features'][0]['properties']['color'] = hex_c
 
 classes = ratio_df['city'].to_list()
@@ -178,7 +182,7 @@ geoJason = [
                         color: feature.properties.color
                     })
                 """)
-                ) 
+                )
     for cityKey, areaJson in cities_l.items()
 ]
 
@@ -198,6 +202,24 @@ controls = html.Div(
     ],
     className="mb-3"
 )
+
+colors = {'No qualifications':'#ab5458',
+            'Level 1':'#789890',
+            'Apprenticeship':'#00646f',
+            'Level 3': '#3b9ba6',
+            'Level 4': '#69d6e2'}
+    
+full_plot_ec = df_plot2.filter(pl.col('econ')=='Econ inactive, nonStudent')
+full_plot = full_plot_ec.filter(pl.col('city') == 'E06000033').group_by(['city', 'econ', "Qual-code",'Qualification']).agg(pl.col('observation').mean()).sort(by='observation')
+full_plot_round_perc = full_plot.with_columns(((pl.col("observation") / pl.sum("observation")) * 100).round().alias("Percent"))
+fig2 = px.bar(full_plot_round_perc,
+                y='Qualification', x="Percent",color="Qualification", color_discrete_map = colors, title="Econ inactive, nonStudent")
+fig2.update_yaxes(categoryorder='array', categoryarray= ['No qualifications','Level 1', 'Level 2','Apprenticeship', 'Level 3', 'Level 4'])
+fig2.update_layout(plot_bgcolor='#222222',paper_bgcolor = '#222222', template = "plotly_dark")
+
+default_fig = fig2
+
+
 # create the app layout
 app.layout = dbc.Container([
 
@@ -208,10 +230,11 @@ app.layout = dbc.Container([
             children=[dl.TileLayer()] + geoJason,
             style={'height': '50vh'},
         ),
-        html.Div(id="capital")])]),
+        dl.Colorbar(colorscale=colorscale,width=20, height=200, min=0, max=50, position="topright"),
+        html.Div(id="capital", style = {'font-size':'24pt'})])]),
     dbc.Row([
         dbc.Col([controls], xs=4),
-        dbc.Col([dbc.Col(dcc.Graph(id='barplot_city'))])]),
+        dbc.Col([dbc.Col(dcc.Graph(id='barplot_city', figure=default_fig))])]),
     dcc.Store(id='last-clicked-city', data=None),
     dcc.Store(id='Filtered-econ', data='Figure1')])
 
@@ -246,22 +269,9 @@ def display_selected_city(n_clicks, selected_figure_from_dropdown, last_clicked_
     # if no city has been clicked so far, return an initial message
     if city is None:
         return "Click on a marker to select a city.", dash.no_update, last_clicked_city, selected_figure_from_dropdown
-   
+    plotted = df_plot2.filter(pl.col('city')==city)['Auth'].unique().item()
+
     # handle figure selection: 
-
-    plot_all = df_plot2.filter(pl.col('city') == city).group_by(['city', 'Auth', 'Qualification',"Qual-code"]).agg(pl.col('observation').mean()).sort(by='observation')
-    plot_all_round_perc = plot_all.with_columns(((pl.col("observation") / pl.sum("observation")) * 100).round().alias("Percent"))
-    colors = {'No qualifications':'#ab5458',
-              'Level 1':'#789890',
-              'Apprenticeship':'#00646f',
-              'Level 3': '#3b9ba6',
-              'Level 4': '#69d6e2'}
-    full_plot_ec = df_plot2.filter(pl.col('econ')=='Econ inactive, nonStudent')
-    full_plot = full_plot_ec.filter(pl.col('city') == city).group_by(['city', 'econ', "Qual-code",'Qualification']).agg(pl.col('observation').mean()).sort(by='observation')
-    full_plot_round_perc = full_plot.with_columns(((pl.col("observation") / pl.sum("observation")) * 100).round().alias("Percent"))
-    fig = px.bar(full_plot_round_perc,
-                    y='Qualification', x="Percent",color="Qualification", color_discrete_map = colors, title="Econ inactive, nonStudent")
-
     if selected_figure_from_dropdown == 'Figure1':
         full_plot_ec = df_plot2.filter(pl.col('econ')=='Econ inactive, nonStudent')
         full_plot = full_plot_ec.filter(pl.col('city') == city).group_by(['city', 'econ', "Qual-code",'Qualification']).agg(pl.col('observation').mean()).sort(by='observation')
@@ -282,7 +292,7 @@ def display_selected_city(n_clicks, selected_figure_from_dropdown, last_clicked_
                     y='Qualification', x="Percent",color="Qualification", color_discrete_map = colors, title="Econ active, Student, Searching")
     fig.update_yaxes(categoryorder='array', categoryarray= ['No qualifications','Level 1', 'Level 2','Apprenticeship', 'Level 3', 'Level 4'])
     fig.update_layout(plot_bgcolor='#222222',paper_bgcolor = '#222222', template = "plotly_dark")
-    return f"You clicked on {city}", fig, city, selected_figure_from_dropdown
+    return f"{plotted}", fig, city, selected_figure_from_dropdown
 
 if __name__ == '__main__':
     app.run_server(debug=False)

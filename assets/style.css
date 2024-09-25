@@ -1,0 +1,36 @@
+/* style.css */
+
+/* Target the dropdown input (the part visible before clicking) */
+.Select-control {
+    background-color: #1f77b4; /* Set background color */
+    color: white !important;   /* Set text color */
+    border: 2px solid #1f77b4; /* Set border color */
+}
+
+/* Maintain background and text color when focused */
+.Select-control.is-focused {
+    background-color: #1f77b4 !important; /* Same background color when focused */
+    color: white !important;
+}
+
+/* Maintain background and text color when clicked or hovered */
+.Select-control:hover, .Select-control:active {
+    background-color: #1f77b4 !important; /* Keep same background color on hover */
+    color: white !important;              /* Keep same text color on hover */
+}
+
+/* Dropdown menu background and option styling */
+.Select-menu-outer {
+    background-color: #1f77b4; /* Background of dropdown menu */
+}
+
+.Select-option {
+    color: white !important;   /* Text color of dropdown items */
+    background-color: #1f77b4; /* Background of each option */
+}
+
+/* Hover effect for dropdown options */
+.Select-option:hover {
+    background-color: #d62728 !important; /* Background on hover */
+    color: white !important;              /* Text color on hover */
+}
