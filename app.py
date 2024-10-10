@@ -364,7 +364,7 @@ def display_selected_city(n_clicks, selected_figure_from_dropdown, last_clicked_
 
     elif selected_figure_from_dropdown == 'all3':
         full_plot_ec = df_plot2.filter(pl.col('econ').is_in(['Econ active, Student, Searching','Econ active, nonStudent, Searching','Econ inactive, nonStudent']))
-        title_selected = "All active and inactive"d
+        title_selected = "All active and inactive"
         groupss = ['city', "Qual-code",'Qualifications']
         
         
